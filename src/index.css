@@ -1,0 +1,34 @@
+@import "tailwindcss";
+@config "../tailwind.config.js";
+
+@layer base {
+    body {
+        @apply antialiased text-zinc-900 dark:text-zinc-100 bg-white dark:bg-zinc-950 transition-colors duration-300;
+    }
+}
+
+@utility active-tab-glow {
+    box-shadow: 0 0 15px rgba(79, 70, 229, 0.1);
+}
+
+@utility premium-card {
+    @apply bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-800/60 shadow-sm transition-all duration-200;
+
+    &:hover {
+        @apply border-indigo-500/20 shadow-md transform-gpu;
+    }
+}
+
+@utility custom-scrollbar {
+    &::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    &::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        @apply bg-slate-200 dark:bg-zinc-700 rounded-full;
+    }
+}

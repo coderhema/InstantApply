@@ -1,0 +1,1 @@
+chrome.runtime.onInstalled.addListener(()=>{console.log("InstantApply Extension installed"),chrome.sidePanel&&chrome.sidePanel.setPanelBehavior({openPanelOnActionClick:!0}).catch(e=>console.error(e))});chrome.runtime.onMessage.addListener((e,t,n)=>{if(e.action==="GET_TAB_INFO")return chrome.tabs.query({active:!0,currentWindow:!0},r=>{n({tab:r[0]})}),!0});

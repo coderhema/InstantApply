@@ -1,4 +1,3 @@
-
 {
   "manifest_version": 3,
   "name": "InstantApply",
@@ -22,13 +21,17 @@
     "default_path": "index.html"
   },
   "background": {
-    "service_worker": "background.ts",
+    "service_worker": "background.js",
     "type": "module"
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["contentScript.ts"]
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "contentScript.js"
+      ]
     }
   ]
 }

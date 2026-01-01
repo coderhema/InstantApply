@@ -1,0 +1,2 @@
+chrome.runtime.onMessage.addListener((l,a,n)=>{if(l.action==="SCRAPE_FORM_CONTEXT"){const r=Array.from(document.querySelectorAll("label, h1, h2, h3, p")).map(e=>{var t;return(t=e.textContent)==null?void 0:t.trim()}).filter(e=>e&&e.length>3&&e.length<200).slice(0,20),o=Array.from(document.querySelectorAll("input, textarea")).map(e=>e.placeholder||e.name).filter(Boolean);n({title:document.title,context:r.join(`
+`),inputs:o})}});
