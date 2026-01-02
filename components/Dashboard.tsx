@@ -110,7 +110,7 @@ const Dashboard: React.FC<DashboardProps> = ({ forms, onNewHook }) => {
           { label: 'Pending', count: stats.pending, color: 'text-zinc-400 dark:text-zinc-500', icon: <FaClock /> },
           { label: 'Errors', count: stats.error, color: 'text-rose-500 dark:text-rose-400', icon: <FaExclamationTriangle /> }
         ].map((stat, i) => (
-          <div key={i} className="premium-card dark:bg-zinc-900 dark:border-zinc-800 p-5 rounded-2xl flex flex-col justify-between h-32">
+          <div key={i} className="bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md border border-slate-100 dark:border-zinc-800 p-5 rounded-2xl flex flex-col justify-between h-32 transition-all hover:shadow-lg">
             <div className="flex items-center justify-between">
               <span className={`text-lg ${stat.color}`}>{stat.icon}</span>
               <span className="text-[10px] font-bold text-slate-300 dark:text-zinc-600 uppercase tracking-widest">Live</span>

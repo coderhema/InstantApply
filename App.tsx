@@ -65,7 +65,7 @@ const App: React.FC = () => {
           <div className="max-w-3xl animate-in fade-in duration-500">
             <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-8 tracking-tight">Security & Preferences</h2>
             <div className="space-y-4">
-              <div className="premium-card dark:bg-zinc-900 dark:border-zinc-800 p-6 rounded-3xl flex items-center justify-between">
+              <div className="bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md border border-slate-100 dark:border-zinc-800 p-6 rounded-3xl flex items-center justify-between transition-all hover:shadow-lg">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-xl flex items-center justify-center"><FaShieldAlt /></div>
                   <div>
@@ -85,7 +85,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className={`flex h-screen bg-[#fafafa] dark:bg-zinc-950 overflow-hidden selection:bg-indigo-100 dark:selection:bg-indigo-900/30 selection:text-indigo-900 dark:selection:text-indigo-200 transition-colors duration-300`}>
+    <div className="flex h-screen bg-[#fafafa] dark:bg-zinc-950 overflow-hidden selection:bg-indigo-100 dark:selection:bg-indigo-900/30 selection:text-indigo-900 dark:selection:text-indigo-200 transition-colors duration-300">
       <Sidebar 
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 

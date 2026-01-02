@@ -7,11 +7,12 @@ export class GeminiService {
 
   constructor() {
     // Standard initialization using process.env.API_KEY as per GenAI guidelines
-    this.ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
+    this.ai = new GoogleGenAI({ apiKey });
   }
 
   async suggestFormResponses(
-    profile: UserProfile, 
+    profile: UserProfile,
     formDescription: string
   ): Promise<FormFieldSuggestion[]> {
     const response = await this.ai.models.generateContent({
