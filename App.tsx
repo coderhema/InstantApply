@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import Profile from './components/Profile';
@@ -30,6 +30,20 @@ const App: React.FC = () => {
     }
     return false;
   });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   useEffect(() => {
     if (isDarkMode) {
@@ -57,7 +71,7 @@ const App: React.FC = () => {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'dashboard': return <Dashboard forms={forms} onNewHook={() => setActiveTab('hook')} />;
+      case 'dashboard': return <Dashboard forms={forms} onNewHook={() => setActiveTab('hook')} searchQuery={searchQuery} />;
       case 'profile': return <Profile profile={profile} onSave={handleUpdateProfile} />;
       case 'hook': return <FormHook profile={profile} onComplete={handleCompleteForm} />;
       case 'settings':
@@ -95,11 +109,36 @@ const App: React.FC = () => {
       
       <main className="flex-1 flex flex-col min-w-0 transition-all duration-300">
         <header className="h-20 flex items-center justify-between px-8 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md border-b border-slate-100 dark:border-zinc-800 z-10 transition-colors">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-slate-50 dark:bg-zinc-800 flex items-center justify-center text-slate-400 dark:text-zinc-500">
-              <FaSearch size={12} />
+          <div className={`flex items-center gap-3 transition-all duration-300 ease-out group ${
+            isSearchFocused || searchQuery ? 'w-full max-w-md' : 'w-10'
+          }`}>
+            <button 
+              onClick={() => searchInputRef.current?.focus()}
+              className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 transition-colors ${
+                isSearchFocused ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-500' : 'bg-slate-50 dark:bg-zinc-800/50 text-slate-400 dark:text-zinc-500 hover:bg-slate-100 dark:hover:bg-zinc-800'
+              }`}
+            >
+              <FaSearch size={14} />
+            </button>
+            <div className={`flex-1 relative transition-all duration-300 ${
+              isSearchFocused || searchQuery ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4 pointer-events-none w-0 overflow-hidden'
+            }`}>
+              <input
+                ref={searchInputRef}
+                type="text"
+                placeholder="Search hooks..."
+                value={searchQuery}
+                onFocus={() => setIsSearchFocused(true)}
+                onBlur={() => setIsSearchFocused(false)}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-transparent border-none outline-none text-[13px] font-medium text-zinc-900 dark:text-zinc-100 placeholder:text-slate-300 dark:placeholder:text-zinc-600"
+              />
+              {!searchQuery && (
+                <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <p className="text-[10px] font-bold text-slate-300 dark:text-zinc-700 uppercase tracking-widest hidden md:block border border-slate-100 dark:border-zinc-800 px-2 py-0.5 rounded-md">Cmd + K</p>
+                </div>
+              )}
             </div>
-            <p className="text-[12px] font-bold text-slate-300 dark:text-zinc-600 uppercase tracking-widest hidden md:block">Cmd + K to search</p>
           </div>
           
           <div className="flex items-center gap-6">

@@ -37,9 +37,10 @@ const AnimatedCheck = () => (
 interface DashboardProps {
   forms: FormEntry[];
   onNewHook?: () => void;
+  searchQuery?: string;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ forms, onNewHook }) => {
+const Dashboard: React.FC<DashboardProps> = ({ forms, onNewHook, searchQuery = '' }) => {
   const [activeFilter, setActiveFilter] = useState<FormStatus | 'ALL'>('ALL');
 
   const stats = useMemo(() => {
@@ -51,8 +52,19 @@ const Dashboard: React.FC<DashboardProps> = ({ forms, onNewHook }) => {
   }, [forms]);
 
   const filteredForms = useMemo(() => {
-    return activeFilter === 'ALL' ? forms : forms.filter(f => f.status === activeFilter);
-  }, [forms, activeFilter]);
+    let result = forms;
+    if (activeFilter !== 'ALL') {
+      result = result.filter(f => f.status === activeFilter);
+    }
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(f => 
+        f.title.toLowerCase().includes(query) || 
+        f.url.toLowerCase().includes(query)
+      );
+    }
+    return result;
+  }, [forms, activeFilter, searchQuery]);
 
   const getStatusDisplay = (status: FormStatus) => {
     switch (status) {
