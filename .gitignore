@@ -17,7 +17,7 @@ dist-ssr
 !.vscode/extensions.json
 .idea
 .DS_Store
-*dist-firefox/
+dist-firefox
 *.suo
 *.ntvs*
 *.njsproj
