@@ -14,6 +14,7 @@ export interface UserProfile {
   bio: string;
   experience: string;
   writingStyle: string;
+  customFields?: { id: string; label: string; value: string }[];
 }
 
 export interface FormEntry {

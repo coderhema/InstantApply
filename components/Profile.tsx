@@ -1,6 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { UserProfile } from '../types';
+import { storageService } from '../services/storageService';
 import { FaSave, FaPlus, FaTimes, FaMagic } from 'react-icons/fa';
 
 interface ProfileProps {
@@ -16,6 +16,8 @@ const PRESET_CLIPS = [
 const Profile: React.FC<ProfileProps> = ({ profile, onSave }) => {
   const [formData, setFormData] = useState<UserProfile>(profile);
   const [customTag, setCustomTag] = useState('');
+  const [customField, setCustomField] = useState({ label: '', value: '' });
+  const [showFieldInput, setShowFieldInput] = useState(false);
   
   // Parse existing writingStyle string into an array of tags for internal UI
   const [selectedTags, setSelectedTags] = useState<string[]>(() => {
@@ -55,10 +57,33 @@ const Profile: React.FC<ProfileProps> = ({ profile, onSave }) => {
     }));
   }, [selectedTags]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const addCustomField = () => {
+    if (customField.label && customField.value) {
+      const newField = { 
+        id: Date.now().toString(), 
+        label: customField.label, 
+        value: customField.value 
+      };
+      setFormData(prev => ({
+        ...prev,
+        customFields: [...(prev.customFields || []), newField]
+      }));
+      setCustomField({ label: '', value: '' });
+      setShowFieldInput(false);
+    }
+  };
+
+  const removeCustomField = (id: string) => {
+    setFormData(prev => ({
+      ...prev,
+      customFields: (prev.customFields || []).filter(f => f.id !== id)
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    await storageService.saveProfile(formData);
     onSave(formData);
-    // Visual feedback for save (would ideally use a toast component)
   };
 
   return (
@@ -177,9 +202,76 @@ const Profile: React.FC<ProfileProps> = ({ profile, onSave }) => {
                </div>
             </div>
           </div>
-        </div>
+        {/* Custom Fields Section */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+             <div className="flex flex-col gap-1">
+               <label className="text-[11px] font-black uppercase text-slate-400 dark:text-zinc-500 tracking-widest px-1">Custom Knowledge Fields</label>
+               <p className="text-[12px] text-slate-400 dark:text-zinc-600 px-1">Add specific data points for the Agent to use.</p>
+             </div>
+             <button
+               type="button"
+               onClick={() => setShowFieldInput(true)}
+               className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-zinc-800 px-3 py-1.5 rounded-lg transition-all"
+             >
+               <FaPlus size={10} /> Add Field
+             </button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {formData.customFields?.map(field => (
+              <div key={field.id} className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-4 rounded-2xl flex items-center justify-between group">
+                 <div>
+                   <p className="text-[10px] font-black text-slate-400 dark:text-zinc-600 uppercase tracking-widest mb-1">{field.label}</p>
+                   <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{field.value}</p>
+                 </div>
+                 <button
+                   type="button"
+                   onClick={() => removeCustomField(field.id)}
+                   className="text-slate-300 dark:text-zinc-700 hover:text-rose-500 transition-colors opacity-0 group-hover:opacity-100"
+                 >
+                   <FaTimes />
+                 </button>
+              </div>
+            ))}
+          </div>
 
-        <div className="flex items-center justify-end pt-4">
+          {showFieldInput && (
+            <div className="bg-slate-50 dark:bg-zinc-950/50 p-4 rounded-2xl border border-dashed border-slate-200 dark:border-zinc-800 animate-in fade-in zoom-in-95 duration-200 space-y-4">
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <input
+                   className="px-4 py-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-sm"
+                   placeholder="Label (e.g., 'Target Audience')"
+                   value={customField.label}
+                   onChange={(e) => setCustomField({...customField, label: e.target.value})}
+                 />
+                 <input
+                   className="px-4 py-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-sm"
+                   placeholder="Value (e.g., 'SaaS Startups')"
+                   value={customField.value}
+                   onChange={(e) => setCustomField({...customField, value: e.target.value})}
+                 />
+               </div>
+               <div className="flex justify-end gap-2">
+                 <button
+                   type="button"
+                   onClick={() => setShowFieldInput(false)}
+                   className="px-4 py-2 text-xs font-bold text-slate-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+                 >
+                   Cancel
+                 </button>
+                 <button
+                   type="button"
+                   onClick={addCustomField}
+                   disabled={!customField.label || !customField.value}
+                   className="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 px-4 py-2 rounded-xl text-xs font-bold disabled:opacity-50"
+                 >
+                   Save Field
+                 </button>
+               </div>
+            </div>
+          )}
+        </div>
           <button 
             type="submit"
             className="bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-zinc-200 text-white dark:text-zinc-900 font-bold py-4 px-12 rounded-2xl shadow-xl shadow-zinc-200 dark:shadow-none transition-all flex items-center justify-center gap-3 active:scale-95 hover-float"

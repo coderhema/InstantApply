@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
-import { geminiService } from '../services/geminiService';
+import { groqService } from '../services/groqService';
 import { parseService } from '../services/parseService';
 import { UserProfile, FormFieldSuggestion } from '../types';
 import { FaLightbulb, FaRobot, FaMagic, FaRocket, FaCopy, FaCheck, FaLink, FaAlignLeft, FaSync, FaInfoCircle, FaHeading } from 'react-icons/fa';
@@ -24,63 +23,111 @@ const FormHook: React.FC<FormHookProps> = ({ profile, onComplete }) => {
   const [activeTooltip, setActiveTooltip] = useState<number | null>(null);
   const [wasAutoDetected, setWasAutoDetected] = useState(false);
 
-  const handleScrape = useCallback(async () => {
-    if (typeof chrome === 'undefined' || !chrome.tabs) return;
+  const handleScrape = useCallback(async (targetUrl?: string) => {
+    // If targetUrl is provided, use it; otherwise use the current state url
+    const urlToScrape = targetUrl || url;
+    if (!urlToScrape) return;
 
     setIsScraping(true);
-    chrome.tabs.query({ active: true, currentWindow: true }, async (tabs: any[]) => {
-      const activeTab = tabs[0];
-      if (activeTab?.url) {
-        try {
-          // Use Parse.bot service instead of content script
-          const scrapedData = await parseService.runScraper(activeTab.url);
+    
+    // Check if we are in an extension environment
+    const isExtension = typeof chrome !== 'undefined' && chrome.tabs;
 
-          // Provide visual feedback and set data
-          if (scrapedData) {
-            // Assuming the scraper returns meaningful data, we convert it to a string context for Gemini
-            // If the scraper returns a specific structure, we could improve this mapping
-            const contextString = typeof scrapedData === 'string'
-              ? scrapedData
-              : JSON.stringify(scrapedData, null, 2);
+    try {
+      // Use Parse.bot service instead of content script
+      const scrapedData = await parseService.runScraper(urlToScrape);
 
-            setDescription(contextString);
+      // Provide visual feedback and set data
+      if (scrapedData) {
+        // Handle both generic scraper responses and the specialized extract_form_fields response
+        const dataToProcess = Array.isArray(scrapedData) ? scrapedData[0] : scrapedData;
+        
+        let contextString = '';
+        
+        // If it's the specialized "extract_form_fields" response with a fields array
+        if (dataToProcess && dataToProcess.fields && Array.isArray(dataToProcess.fields)) {
+          contextString = dataToProcess.fields
+            .map((f: any) => `${f.label || f.name} (${f.type}): ${f.placeholder || ''}`)
+            .join('\n');
+          
+          if (!title && dataToProcess.form_id) {
+            setTitle(dataToProcess.form_id.replace(/-/g, ' '));
+          }
+        } else {
+          // Fallback to generic JSON or string
+          contextString = typeof dataToProcess === 'string'
+            ? dataToProcess
+            : JSON.stringify(dataToProcess, null, 2);
+        }
 
-            if (!title && activeTab.title) {
+        setDescription(contextString);
+
+        // Try to extract title from scraped data if available
+        if (dataToProcess && dataToProcess.title) {
+          setTitle(dataToProcess.title);
+          setWasAutoDetected(true);
+        } else if (isExtension) {
+          chrome.tabs.query({ active: true, currentWindow: true }, (tabs: any[]) => {
+            const activeTab = tabs[0];
+            if (!title && activeTab?.title) {
               setTitle(activeTab.title);
               setWasAutoDetected(true);
             }
-          }
-        } catch (error) {
-          console.error("Scraping failed:", error);
-          // Fallback or error notification could go here
-        } finally {
-          setIsScraping(false);
+          });
         }
-      } else {
-        setIsScraping(false);
+        
+        return true;
       }
-    });
-  }, [title]);
+    } catch (error) {
+      console.error("Scraping failed:", error);
+    } finally {
+      setIsScraping(false);
+    }
+    return false;
+  }, [url, title, description]);
+
+  // Handle URL change with auto-detect logic
+  const handleUrlChange = async (newUrl: string) => {
+    setUrl(newUrl);
+    
+    // Check if it's a valid Google Form URL (basic check)
+    if (newUrl.includes('docs.google.com/forms')) {
+      const success = await handleScrape(newUrl);
+      if (success) {
+        // Automatically trigger AI drafting if scraping was successful
+        handleHook();
+      }
+    }
+  };
 
   // Auto-detect current tab and scrape on mount
   useEffect(() => {
     if (typeof chrome !== 'undefined' && chrome.tabs) {
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs: any[]) => {
         if (tabs[0]?.url) {
-          setUrl(tabs[0].url);
+          const tabUrl = tabs[0].url;
+          setUrl(tabUrl);
           // Trigger automatic scrape once URL is identified
-          handleScrape();
+          handleScrape(tabUrl);
         }
       });
     }
-  }, []); // Remove handleScrape dependency to avoid infinite loops if generic
+  }, []); // Remove handleScrape dependency to avoid infinite loops
 
 
   const handleHook = async () => {
-    if (!description.trim()) return;
+    // If description is still empty, we can't do anything
+    if (!description.trim()) {
+      // If we have a URL but no description, try one last scrape
+      if (url) {
+        await handleScrape(url);
+      }
+      if (!description.trim()) return;
+    }
+
     setLoading(true);
     try {
-      const results = await geminiService.suggestFormResponses(profile, description);
+      const results = await groqService.suggestFormResponses(profile, description);
       setSuggestions(results);
     } catch (err) {
       console.error(err);
@@ -103,7 +150,7 @@ const FormHook: React.FC<FormHookProps> = ({ profile, onComplete }) => {
           <p className="text-[13px] text-slate-500 dark:text-zinc-400 font-medium">Capture form data and generate high-intent hooks.</p>
         </div>
         <button
-          onClick={handleScrape}
+          onClick={() => handleScrape()}
           disabled={isScraping}
           className="text-[11px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-indigo-100 transition-all active:scale-95 group disabled:opacity-50"
         >
@@ -146,7 +193,7 @@ const FormHook: React.FC<FormHookProps> = ({ profile, onComplete }) => {
                 className="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-500/30 focus:border-indigo-500 outline-none transition-all text-sm font-medium dark:text-zinc-100 opacity-80"
                 placeholder="URL of the form..."
                 value={url}
-                onChange={(e) => setUrl(e.target.value)}
+                onChange={(e) => handleUrlChange(e.target.value)}
               />
             </div>
 
@@ -185,7 +232,16 @@ const FormHook: React.FC<FormHookProps> = ({ profile, onComplete }) => {
               </h3>
               {suggestions.length > 0 && (
                 <button
-                  onClick={() => onComplete(title || url.split('/').pop()?.substring(0, 20) || "Untitled Hook", url)}
+                  onClick={() => {
+                    const finalTitle = title || url.split('/').pop()?.substring(0, 20) || "Untitled Hook";
+                    onComplete(finalTitle, url);
+                    // Reset state for next hook
+                    setUrl('');
+                    setTitle('');
+                    setDescription('');
+                    setSuggestions([]);
+                    setWasAutoDetected(false);
+                  }}
                   className="text-[11px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest hover:bg-white dark:hover:bg-zinc-900 px-3 py-1.5 rounded-lg transition-all"
                 >
                   Confirm Hook

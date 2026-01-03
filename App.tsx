@@ -4,6 +4,7 @@ import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import Profile from './components/Profile';
 import FormHook from './components/FormHook';
+import { storageService } from './services/storageService';
 import { UserProfile, FormEntry, FormStatus } from './types';
 import { INITIAL_PROFILE, MOCK_FORMS } from './constants';
 import { 
@@ -23,6 +24,19 @@ const App: React.FC = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [profile, setProfile] = useState<UserProfile>(INITIAL_PROFILE);
   const [forms, setForms] = useState<FormEntry[]>(MOCK_FORMS);
+
+  // Load persistent data
+  useEffect(() => {
+    const loadData = async () => {
+      const savedProfile = await storageService.getProfile();
+      if (savedProfile) setProfile(savedProfile);
+      
+      const savedForms = await storageService.getForms();
+      if (savedForms) setForms(savedForms);
+    };
+    loadData();
+  }, []);
+
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('theme') === 'dark' || 
@@ -55,9 +69,12 @@ const App: React.FC = () => {
     }
   }, [isDarkMode]);
 
-  const handleUpdateProfile = (updated: UserProfile) => setProfile(updated);
+  const handleUpdateProfile = (updated: UserProfile) => {
+    setProfile(updated);
+    // Profile component handles the storage save, but we could do it here too for redundancy
+  };
 
-  const handleCompleteForm = (title: string, url: string) => {
+  const handleCompleteForm = async (title: string, url: string) => {
     const newForm: FormEntry = {
       id: Math.random().toString(36).substr(2, 9),
       title: title || 'New Hook Result',
@@ -65,7 +82,9 @@ const App: React.FC = () => {
       status: FormStatus.FILLED,
       createdAt: Date.now(),
     };
-    setForms([newForm, ...forms]);
+    const updatedForms = [newForm, ...forms];
+    setForms(updatedForms);
+    await storageService.saveForms(updatedForms);
     setActiveTab('dashboard');
   };
 

@@ -10,6 +10,13 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 3000,
       host: '0.0.0.0',
+      proxy: {
+        '/api/parse': {
+          target: 'https://api.parse.bot',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api\/parse/, '/scraper'),
+        }
+      }
     },
     plugins: [
       react(),
@@ -30,7 +37,9 @@ export default defineConfig(({ mode }) => {
     define: {
       'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-      'process.env.VITE_PARSE_BOT_API_KEY': JSON.stringify(env.VITE_PARSE_BOT_API_KEY)
+      'process.env.VITE_PARSE_BOT_API_KEY': JSON.stringify(env.VITE_PARSE_BOT_API_KEY),
+      'process.env.VITE_PARSE_BOT_AUTH_TOKEN': JSON.stringify(env.VITE_PARSE_BOT_AUTH_TOKEN),
+      'process.env.VITE_GROQ_API_KEY': JSON.stringify(env.VITE_GROQ_API_KEY)
     },
     resolve: {
       alias: {
