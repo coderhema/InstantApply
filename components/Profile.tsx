@@ -18,6 +18,7 @@ const Profile: React.FC<ProfileProps> = ({ profile, onSave }) => {
   const [customTag, setCustomTag] = useState('');
   const [customField, setCustomField] = useState({ label: '', value: '' });
   const [showFieldInput, setShowFieldInput] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
   
   // Parse existing writingStyle string into an array of tags for internal UI
   const [selectedTags, setSelectedTags] = useState<string[]>(() => {
@@ -84,6 +85,10 @@ const Profile: React.FC<ProfileProps> = ({ profile, onSave }) => {
     e.preventDefault();
     await storageService.saveProfile(formData);
     onSave(formData);
+    
+    // Show saved feedback
+    setIsSaved(true);
+    setTimeout(() => setIsSaved(false), 2000);
   };
 
   return (
@@ -274,9 +279,21 @@ const Profile: React.FC<ProfileProps> = ({ profile, onSave }) => {
         </div>
           <button 
             type="submit"
-            className="bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-zinc-200 text-white dark:text-zinc-900 font-bold py-4 px-12 rounded-2xl shadow-xl shadow-zinc-200 dark:shadow-none transition-all flex items-center justify-center gap-3 active:scale-95 hover-float"
+            className={`font-bold py-4 px-12 rounded-2xl shadow-xl shadow-zinc-200 dark:shadow-none transition-all flex items-center justify-center gap-3 active:scale-95 hover-float ${
+              isSaved 
+                ? 'bg-emerald-500 text-white' 
+                : 'bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-zinc-200 text-white dark:text-zinc-900'
+            }`}
           >
-            <FaSave /> Update Agent Knowledge
+            {isSaved ? (
+              <>
+                <span className="text-lg">✓</span> Saved Successfully
+              </>
+            ) : (
+              <>
+                <FaSave /> Update Agent Knowledge
+              </>
+            )}
           </button>
         </div>
       </form>

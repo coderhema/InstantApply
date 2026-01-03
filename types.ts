@@ -1,6 +1,8 @@
 
 export enum FormStatus {
   PENDING = 'PENDING',
+  SCRAPED = 'SCRAPED',
+  ANALYZED = 'ANALYZED',
   FILLED = 'FILLED',
   ERROR = 'ERROR',
   CLOSED = 'CLOSED'
@@ -28,6 +30,7 @@ export interface FormEntry {
 }
 
 export interface FormFieldSuggestion {
+  fieldName: string;
   label: string;
   suggestedValue: string;
   reasoning: string;

@@ -38,9 +38,12 @@ interface DashboardProps {
   forms: FormEntry[];
   onNewHook?: () => void;
   searchQuery?: string;
+  onDelete: (id: string) => void;
+  onArchive: (id: string) => void;
+  onSelectForm: (form: FormEntry) => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ forms, onNewHook, searchQuery = '' }) => {
+const Dashboard: React.FC<DashboardProps> = ({ forms, onNewHook, searchQuery = '', onDelete, onArchive, onSelectForm }) => {
   const [activeFilter, setActiveFilter] = useState<FormStatus | 'ALL'>('ALL');
 
   const stats = useMemo(() => {
@@ -48,6 +51,7 @@ const Dashboard: React.FC<DashboardProps> = ({ forms, onNewHook, searchQuery = '
       pending: forms.filter(f => f.status === FormStatus.PENDING).length,
       filled: forms.filter(f => f.status === FormStatus.FILLED).length,
       error: forms.filter(f => f.status === FormStatus.ERROR).length,
+      archived: forms.filter(f => f.status === FormStatus.CLOSED).length,
     };
   }, [forms]);
 
@@ -55,9 +59,18 @@ const Dashboard: React.FC<DashboardProps> = ({ forms, onNewHook, searchQuery = '
     let result = forms;
     if (activeFilter !== 'ALL') {
       result = result.filter(f => f.status === activeFilter);
+    } else {
+      // By default ('ALL'), we usually don't show archived items in the main list unless explicitly asked, 
+      // but "All" usually implies "Active" + "Pending" + "Error". 
+      // Let's filter OUT closed/archived forms in 'ALL' view to keep it clean, 
+      // as usually 'Archived' is a separate bucket.
+      result = result.filter(f => f.status !== FormStatus.CLOSED);
     }
+    
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
+      // If searching, we might search everything, even archived? 
+      // For now let's stick to the filtered list logic.
       result = result.filter(f => 
         f.title.toLowerCase().includes(query) || 
         f.url.toLowerCase().includes(query)
@@ -70,9 +83,9 @@ const Dashboard: React.FC<DashboardProps> = ({ forms, onNewHook, searchQuery = '
     switch (status) {
       case FormStatus.FILLED:
         return {
-          label: 'Active',
+          label: 'Completed',
           color: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30',
-          icon: <AnimatedCheck />
+          icon: <span className="text-lg">🎉</span> // Celebration icon
         };
       case FormStatus.PENDING:
         return {
@@ -137,14 +150,14 @@ const Dashboard: React.FC<DashboardProps> = ({ forms, onNewHook, searchQuery = '
 
       <div className="space-y-4">
         <div className="flex items-center gap-6 border-b border-slate-100 dark:border-zinc-900">
-          {['ALL', FormStatus.FILLED, FormStatus.PENDING, FormStatus.ERROR].map((f) => (
+          {['ALL', FormStatus.FILLED, FormStatus.PENDING, FormStatus.ERROR, FormStatus.CLOSED].map((f) => (
             <button
               key={f}
               onClick={() => setActiveFilter(f as any)}
               className={`pb-4 text-[13px] font-bold transition-all relative ${activeFilter === f ? 'text-zinc-900 dark:text-zinc-100' : 'text-slate-400 dark:text-zinc-600 hover:text-slate-600 dark:hover:text-zinc-400'
                 }`}
             >
-              {f === 'ALL' ? 'Everything' : getStatusDisplay(f as FormStatus).label}
+              {f === 'ALL' ? 'Active Work' : f === FormStatus.CLOSED ? 'Archived' : getStatusDisplay(f as FormStatus).label}
               {activeFilter === f && (
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-zinc-900 dark:bg-zinc-100 rounded-full" />
               )}
@@ -158,7 +171,8 @@ const Dashboard: React.FC<DashboardProps> = ({ forms, onNewHook, searchQuery = '
             return (
               <div
                 key={form.id}
-                className="group flex items-center justify-between p-3 rounded-2xl hover:bg-white dark:hover:bg-zinc-900 hover:shadow-sm border border-transparent hover:border-slate-100 dark:hover:border-zinc-800 transition-all duration-300"
+                onClick={() => onSelectForm(form)}
+                className="group flex items-center justify-between p-3 rounded-2xl hover:bg-white dark:hover:bg-zinc-900 hover:shadow-sm border border-transparent hover:border-slate-100 dark:hover:border-zinc-800 transition-all duration-300 cursor-pointer"
               >
                 <div className="flex items-center gap-4">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm ${statusInfo.color}`}>
@@ -179,8 +193,20 @@ const Dashboard: React.FC<DashboardProps> = ({ forms, onNewHook, searchQuery = '
                     {statusInfo.label}
                   </span>
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button className="p-2 text-slate-400 dark:text-zinc-600 hover:text-zinc-900 dark:hover:text-zinc-100"><FaEye size={14} /></button>
-                    <button className="p-2 text-slate-400 dark:text-zinc-600 hover:text-rose-500"><FaTrash size={14} /></button>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); onArchive(form.id); }}
+                      className="p-2 text-slate-400 dark:text-zinc-600 hover:text-zinc-900 dark:hover:text-zinc-100" 
+                      title="Archive (Hide)"
+                    >
+                      <FaArchive size={14} />
+                    </button>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); onDelete(form.id); }}
+                      className="p-2 text-slate-400 dark:text-zinc-600 hover:text-rose-500"
+                      title="Delete"
+                    >
+                      <FaTrash size={14} />
+                    </button>
                   </div>
                 </div>
               </div>

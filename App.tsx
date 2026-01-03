@@ -4,9 +4,14 @@ import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import Profile from './components/Profile';
 import FormHook from './components/FormHook';
+import FormDetail from './components/FormDetail';
 import { storageService } from './services/storageService';
-import { UserProfile, FormEntry, FormStatus } from './types';
+import { UserProfile, FormEntry, FormStatus, FormFieldSuggestion } from './types';
 import { INITIAL_PROFILE, MOCK_FORMS } from './constants';
+import { fillFormInPage } from './utils/formFiller';
+import { parseService } from './services/parseService';
+
+declare const chrome: any;
 import { 
   FaBell, 
   FaSearch, 
@@ -24,6 +29,7 @@ const App: React.FC = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [profile, setProfile] = useState<UserProfile>(INITIAL_PROFILE);
   const [forms, setForms] = useState<FormEntry[]>(MOCK_FORMS);
+  const [selectedForm, setSelectedForm] = useState<FormEntry | null>(null);
 
   // Load persistent data
   useEffect(() => {
@@ -45,6 +51,16 @@ const App: React.FC = () => {
     return false;
   });
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Lifted state for FormHook persistence
+  const [hookState, setHookState] = useState({
+    url: '',
+    title: '',
+    description: '',
+    suggestions: [] as any[], 
+    context: ''
+  });
+
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -74,25 +90,157 @@ const App: React.FC = () => {
     // Profile component handles the storage save, but we could do it here too for redundancy
   };
 
-  const handleCompleteForm = async (title: string, url: string) => {
+  const handleCompleteForm = async (title: string, url: string, suggestions: FormFieldSuggestion[], fillMode: 'local' | 'cloud' = 'local') => {
+    
+    // 0. Trigger Form Filling based on Mode
+    if (fillMode === 'cloud') {
+      try {
+        console.log("Triggering Cloud Fill via Parse.bot...");
+        // Convert suggestions to Key-Value map for API
+        const formData = suggestions.reduce((acc, s) => {
+          if (s.fieldName && s.suggestedValue) {
+            acc[s.fieldName] = s.suggestedValue;
+          }
+          return acc;
+        }, {} as Record<string, any>);
+        
+        await parseService.submitForm(url, formData);
+        console.log("Cloud Fill Initiated.");
+      } catch (err) {
+        console.error("Cloud Fill Failed:", err);
+      }
+    } 
+    // Local Mode (Extension / Stealth)
+    else if (typeof chrome !== 'undefined' && chrome.tabs && chrome.scripting) {
+      try {
+        const tabs = await new Promise<any[]>((resolve) => 
+          chrome.tabs.query({ active: true, currentWindow: true }, resolve)
+        );
+        
+        const currentTab = tabs[0];
+        // Normalize URLs for comparison (remove trailing slashes, ignoring case)
+        const normalize = (u: string) => (u || '').toLowerCase().replace(/\/$/, '');
+        const currentUrl = normalize(currentTab?.url);
+        const targetUrl = normalize(url);
+
+        const injectFiller = async (tabId: number) => {
+           console.log("Injecting form filler into tab", tabId);
+           // Slight delay to ensure DOM is truly ready even after 'complete' event
+           await new Promise(r => setTimeout(r, 1500)); 
+           await chrome.scripting.executeScript({
+             target: { tabId: tabId },
+             func: fillFormInPage,
+             args: [suggestions]
+           });
+           console.log("Form filler injected.");
+        };
+
+        if (currentTab?.id && currentUrl.includes(targetUrl) || targetUrl.includes(currentUrl)) {
+           // Already on the right page (roughly), just fill
+           await injectFiller(currentTab.id);
+        } else {
+           // Navigate to the target URL first in BACKGROUND (Headless-like)
+           chrome.tabs.create({ url: url, active: false }, (newTab: any) => {
+             if (newTab?.id) {
+               // Wait for page load
+               const listener = (tabId: number, changeInfo: any) => {
+                 if (tabId === newTab.id && changeInfo.status === 'complete') {
+                    chrome.tabs.onUpdated.removeListener(listener);
+                    injectFiller(newTab.id);
+                 }
+               };
+               chrome.tabs.onUpdated.addListener(listener);
+             }
+           });
+        }
+      } catch (err) {
+        console.error("Failed to inject form filler:", err);
+      }
+    }
+
+    // 1. Create Initial Pending Form
     const newForm: FormEntry = {
       id: Math.random().toString(36).substr(2, 9),
       title: title || 'New Hook Result',
       url,
-      status: FormStatus.FILLED,
+      status: FormStatus.PENDING,
       createdAt: Date.now(),
     };
+
+    // 2. Add to list and immediately select it to show Detail View
     const updatedForms = [newForm, ...forms];
     setForms(updatedForms);
-    await storageService.saveForms(updatedForms);
+    setSelectedForm(newForm); // Trigger navigation to Detail View
     setActiveTab('dashboard');
+    await storageService.saveForms(updatedForms);
+
+    // 3. Start Simulation Sequence
+    const updateStatus = async (status: FormStatus) => {
+      const currentForms = await storageService.getForms(); // Get latest
+      if (!currentForms) return;
+
+      const nextForms = currentForms.map(f => 
+        f.id === newForm.id ? { ...f, status } : f
+      );
+      setForms(nextForms);
+      // Update selected form reference if it's the one we are viewing
+      setSelectedForm(prev => prev?.id === newForm.id ? { ...prev, status } : prev);
+      await storageService.saveForms(nextForms);
+    };
+
+    // Sequence: Pending -> Scraped (1s) -> Analyzed (2.5s) -> Filled (4s)
+    setTimeout(() => updateStatus(FormStatus.SCRAPED), 1000);
+    setTimeout(() => updateStatus(FormStatus.ANALYZED), 2500);
+    setTimeout(() => updateStatus(FormStatus.FILLED), 4000);
+  };
+
+  const handleDeleteForm = async (id: string) => {
+    const updatedForms = forms.filter(f => f.id !== id);
+    setForms(updatedForms);
+    await storageService.saveForms(updatedForms);
+  };
+
+  const handleArchiveForm = async (id: string) => {
+    const updatedForms = forms.map(f => 
+      f.id === id ? { ...f, status: FormStatus.CLOSED } : f
+    );
+    setForms(updatedForms);
+    await storageService.saveForms(updatedForms);
   };
 
   const renderContent = () => {
+    // If a form is selected, show the detail view regardless of tab (or specifically for dashboard)
+    if (selectedForm) {
+      return (
+        <FormDetail 
+          form={selectedForm} 
+          onBack={() => setSelectedForm(null)} 
+        />
+      );
+    }
+
     switch (activeTab) {
-      case 'dashboard': return <Dashboard forms={forms} onNewHook={() => setActiveTab('hook')} searchQuery={searchQuery} />;
+      case 'dashboard': 
+        return (
+          <Dashboard 
+            forms={forms} 
+            onNewHook={() => setActiveTab('hook')} 
+            searchQuery={searchQuery}
+            onDelete={handleDeleteForm}
+            onArchive={handleArchiveForm}
+            onSelectForm={setSelectedForm}
+          />
+        );
       case 'profile': return <Profile profile={profile} onSave={handleUpdateProfile} />;
-      case 'hook': return <FormHook profile={profile} onComplete={handleCompleteForm} />;
+      case 'hook': 
+        return (
+          <FormHook 
+            profile={profile} 
+            onComplete={handleCompleteForm}
+            savedState={hookState}
+            onSaveState={(newState: any) => setHookState(prev => ({ ...prev, ...newState }))}
+          />
+        );
       case 'settings':
         return (
           <div className="max-w-3xl animate-in fade-in duration-500">
@@ -113,7 +261,15 @@ const App: React.FC = () => {
             </div>
           </div>
         );
-      default: return <Dashboard forms={forms} />;
+      default: 
+        return (
+          <Dashboard 
+            forms={forms} 
+            onDelete={handleDeleteForm}
+            onArchive={handleArchiveForm}
+            onSelectForm={setSelectedForm}
+          />
+        );
     }
   };
 

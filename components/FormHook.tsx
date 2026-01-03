@@ -9,19 +9,50 @@ declare const chrome: any;
 
 interface FormHookProps {
   profile: UserProfile;
-  onComplete: (title: string, url: string) => void;
+  onComplete: (title: string, url: string, suggestions: FormFieldSuggestion[], fillMode: 'local' | 'cloud') => void;
+  savedState: {
+    url: string;
+    title: string;
+    description: string;
+    suggestions: FormFieldSuggestion[];
+    context: string;
+  };
+  onSaveState: (newState: Partial<FormHookProps['savedState']>) => void;
 }
 
-const FormHook: React.FC<FormHookProps> = ({ profile, onComplete }) => {
-  const [url, setUrl] = useState('');
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+const FormHook: React.FC<FormHookProps> = ({ profile, onComplete, savedState, onSaveState }) => {
+  // Use props for initialization, but local state for inputs to avoid slow typing
+  const [url, setLocalUrl] = useState(savedState.url);
+  const [title, setLocalTitle] = useState(savedState.title);
+  const [description, setLocalDescription] = useState(savedState.description);
+  
+  // Update parent state on debounced/blur or direct changes
+  useEffect(() => {
+    // Sync local state when savedState changes (e.g. initial load)
+    if (savedState.url !== url) setLocalUrl(savedState.url);
+    if (savedState.title !== title) setLocalTitle(savedState.title);
+    if (savedState.description !== description) setLocalDescription(savedState.description);
+  }, [savedState.url === "" && url === ""]); // Only reset if parent clears it
+
+  const updateState = (key: string, value: any) => {
+    onSaveState({ [key]: value });
+  };
+
   const [loading, setLoading] = useState(false);
-  const [suggestions, setSuggestions] = useState<FormFieldSuggestion[]>([]);
+  const [suggestions, setSuggestions] = useState<FormFieldSuggestion[]>(savedState.suggestions);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [isScraping, setIsScraping] = useState(false);
   const [activeTooltip, setActiveTooltip] = useState<number | null>(null);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [wasAutoDetected, setWasAutoDetected] = useState(false);
+  const [fillMode, setFillMode] = useState<'local' | 'cloud'>('local');
+
+  // Sync suggestions to parent when they change
+  useEffect(() => {
+    if (suggestions !== savedState.suggestions) {
+       updateState('suggestions', suggestions);
+    }
+  }, [suggestions]);
 
   const handleScrape = useCallback(async (targetUrl?: string) => {
     // If targetUrl is provided, use it; otherwise use the current state url
@@ -45,13 +76,34 @@ const FormHook: React.FC<FormHookProps> = ({ profile, onComplete }) => {
         let contextString = '';
         
         // If it's the specialized "extract_form_fields" response with a fields array
-        if (dataToProcess && dataToProcess.fields && Array.isArray(dataToProcess.fields)) {
-          contextString = dataToProcess.fields
-            .map((f: any) => `${f.label || f.name} (${f.type}): ${f.placeholder || ''}`)
-            .join('\n');
+          if (dataToProcess && dataToProcess.fields && Array.isArray(dataToProcess.fields)) {
+            contextString = dataToProcess.fields
+              .map((f: any, idx: number) => {
+                // Construct a rich context string so the AI can infer meaning from any available attribute
+                const parts = [];
+                if (f.label) parts.push(`Label: "${f.label}"`);
+                if (f.placeholder) parts.push(`Placeholder: "${f.placeholder}"`);
+                if (f.name) parts.push(`Name: "${f.name}"`);
+                if (f.id) parts.push(`ID: "${f.id}"`);
+                if (f.type) parts.push(`Type: "${f.type}"`);
+                if (f.options && Array.isArray(f.options) && f.options.length > 0) {
+                  const optionsStr = f.options.map((o: any) => typeof o === 'string' ? `"${o}"` : `"${o.label || o.value}"`).join(', ');
+                  parts.push(`Options: [${optionsStr}]`);
+                }
+                
+                // Fallback identifier if absolutely nothing semantic is found
+                if (parts.length === 0 || (parts.length === 1 && f.type)) {
+                   parts.push(`Field #${idx + 1}`);
+                }
+
+                return `{ ${parts.join(', ')} }`;
+              })
+              .join('\n');
           
           if (!title && dataToProcess.form_id) {
-            setTitle(dataToProcess.form_id.replace(/-/g, ' '));
+            const newTitle = dataToProcess.form_id.replace(/-/g, ' ');
+            setLocalTitle(newTitle);
+            updateState('title', newTitle);
           }
         } else {
           // Fallback to generic JSON or string
@@ -60,17 +112,20 @@ const FormHook: React.FC<FormHookProps> = ({ profile, onComplete }) => {
             : JSON.stringify(dataToProcess, null, 2);
         }
 
-        setDescription(contextString);
+        setLocalDescription(contextString);
+        updateState('description', contextString);
 
         // Try to extract title from scraped data if available
         if (dataToProcess && dataToProcess.title) {
-          setTitle(dataToProcess.title);
+          setLocalTitle(dataToProcess.title);
+          updateState('title', dataToProcess.title);
           setWasAutoDetected(true);
         } else if (isExtension) {
           chrome.tabs.query({ active: true, currentWindow: true }, (tabs: any[]) => {
             const activeTab = tabs[0];
             if (!title && activeTab?.title) {
-              setTitle(activeTab.title);
+              setLocalTitle(activeTab.title);
+              updateState('title', activeTab.title);
               setWasAutoDetected(true);
             }
           });
@@ -88,7 +143,8 @@ const FormHook: React.FC<FormHookProps> = ({ profile, onComplete }) => {
 
   // Handle URL change with auto-detect logic
   const handleUrlChange = async (newUrl: string) => {
-    setUrl(newUrl);
+    setLocalUrl(newUrl);
+    updateState('url', newUrl);
     
     // Check if it's a valid Google Form URL (basic check)
     if (newUrl.includes('docs.google.com/forms')) {
@@ -106,7 +162,8 @@ const FormHook: React.FC<FormHookProps> = ({ profile, onComplete }) => {
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs: any[]) => {
         if (tabs[0]?.url) {
           const tabUrl = tabs[0].url;
-          setUrl(tabUrl);
+          setLocalUrl(tabUrl);
+          updateState('url', tabUrl);
           // Trigger automatic scrape once URL is identified
           handleScrape(tabUrl);
         }
@@ -142,8 +199,11 @@ const FormHook: React.FC<FormHookProps> = ({ profile, onComplete }) => {
     setTimeout(() => setCopiedIndex(null), 2000);
   };
 
+  /* Removed isWriting state and overlay logic as simulation moved to App/FormDetail */
+
   return (
     <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* ... header ... */}
       <div className="border-b border-slate-100 dark:border-zinc-900 pb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">Active Engine</h2>
@@ -179,7 +239,8 @@ const FormHook: React.FC<FormHookProps> = ({ profile, onComplete }) => {
                 placeholder="Give this hook a name..."
                 value={title}
                 onChange={(e) => {
-                  setTitle(e.target.value);
+                  setLocalTitle(e.target.value);
+                  updateState('title', e.target.value);
                   setWasAutoDetected(false);
                 }}
               />
@@ -206,7 +267,10 @@ const FormHook: React.FC<FormHookProps> = ({ profile, onComplete }) => {
                 className="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-500/30 focus:border-indigo-500 outline-none transition-all text-sm font-medium resize-none leading-relaxed dark:text-zinc-100"
                 placeholder="Context scraped from active page..."
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                onChange={(e) => {
+                  setLocalDescription(e.target.value);
+                  updateState('description', e.target.value);
+                }}
               />
             </div>
           </div>
@@ -231,21 +295,43 @@ const FormHook: React.FC<FormHookProps> = ({ profile, onComplete }) => {
                 <span className="text-amber-500 animate-pulse-soft"><FaLightbulb /></span> AI Payload
               </h3>
               {suggestions.length > 0 && (
-                <button
-                  onClick={() => {
-                    const finalTitle = title || url.split('/').pop()?.substring(0, 20) || "Untitled Hook";
-                    onComplete(finalTitle, url);
-                    // Reset state for next hook
-                    setUrl('');
-                    setTitle('');
-                    setDescription('');
-                    setSuggestions([]);
-                    setWasAutoDetected(false);
-                  }}
-                  className="text-[11px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest hover:bg-white dark:hover:bg-zinc-900 px-3 py-1.5 rounded-lg transition-all"
-                >
-                  Confirm Hook
-                </button>
+                <div className="flex items-center gap-2">
+                  <div className="flex bg-slate-100 dark:bg-zinc-900 rounded-lg p-0.5 border border-slate-200 dark:border-zinc-800">
+                    <button
+                      onClick={() => setFillMode('local')}
+                      className={`px-2 py-1 text-[9px] font-bold rounded-md transition-all ${fillMode === 'local' ? 'bg-white dark:bg-zinc-800 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-400 hover:text-slate-600 dark:hover:text-zinc-400'}`}
+                      title="Run inside your browser (Best for Logins)"
+                    >
+                      LOCAL
+                    </button>
+                    <button
+                      onClick={() => setFillMode('cloud')}
+                      className={`px-2 py-1 text-[9px] font-bold rounded-md transition-all ${fillMode === 'cloud' ? 'bg-white dark:bg-zinc-800 text-sky-500 shadow-sm' : 'text-slate-400 hover:text-slate-600 dark:hover:text-zinc-400'}`}
+                      title="Run via Parse.bot Cloud"
+                    >
+                      CLOUD
+                    </button>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const finalTitle = title || url.split('/').pop()?.substring(0, 20) || "Untitled Hook";
+                      onComplete(finalTitle, url, suggestions, fillMode);
+                      // Reset state for next hook
+                      setLocalUrl('');
+                      setLocalTitle('');
+                      setLocalDescription('');
+                      setSuggestions([]);
+                      updateState('url', '');
+                      updateState('title', '');
+                      updateState('description', '');
+                      updateState('suggestions', []);
+                      setWasAutoDetected(false);
+                    }}
+                    className="text-[11px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest hover:bg-white dark:hover:bg-zinc-900 px-3 py-1.5 rounded-lg transition-all"
+                  >
+                    Confirm Hook
+                  </button>
+                </div>
               )}
             </div>
 
@@ -291,9 +377,34 @@ const FormHook: React.FC<FormHookProps> = ({ profile, onComplete }) => {
                       </button>
                     </div>
 
-                    <p className="text-[14px] text-zinc-800 dark:text-zinc-200 leading-relaxed font-medium bg-slate-50/50 dark:bg-zinc-950/30 p-3 rounded-xl border border-slate-50 dark:border-zinc-800/50">
-                      "{s.suggestedValue}"
-                    </p>
+                    {editingIndex === idx ? (
+                      <textarea
+                        autoFocus
+                        value={s.suggestedValue}
+                        onChange={(e) => {
+                          const newSuggestions = [...suggestions];
+                          newSuggestions[idx] = { ...newSuggestions[idx], suggestedValue: e.target.value };
+                          setSuggestions(newSuggestions);
+                        }}
+                        onBlur={() => setEditingIndex(null)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            setEditingIndex(null);
+                          }
+                        }}
+                        className="w-full text-[14px] text-zinc-900 dark:text-zinc-100 leading-relaxed font-medium bg-white dark:bg-zinc-950 p-3 rounded-xl border-2 border-indigo-500/50 outline-none resize-none animate-in fade-in duration-200"
+                        rows={3}
+                      />
+                    ) : (
+                      <p 
+                        onDoubleClick={() => setEditingIndex(idx)}
+                        className="text-[14px] text-zinc-800 dark:text-zinc-200 leading-relaxed font-medium bg-slate-50/50 dark:bg-zinc-950/30 p-3 rounded-xl border border-slate-50 dark:border-zinc-800/50 cursor-text hover:bg-slate-100 dark:hover:bg-zinc-900/50 transition-colors border-dashed hover:border-indigo-300/30"
+                        title="Double-click to edit"
+                      >
+                        "{s.suggestedValue}"
+                      </p>
+                    )}
 
                     <div className="mt-4 pt-3 border-t border-slate-50 dark:border-zinc-800/50 flex items-center gap-2 min-w-0">
                       <span className="text-slate-300 dark:text-zinc-700 animate-pulse-soft flex-shrink-0">

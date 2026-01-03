@@ -25,7 +25,6 @@ export class ParseService {
     // Use the specialized "extract" method for form automation
     const endpoint = `${this.baseUrl}/${this.scraperId}/extract_form_fields`;
     console.log(`[ParseService] Calling endpoint: ${endpoint}`);
-    console.log(`[ParseService] Auth token present: ${!!this.authToken}`);
 
     try {
       const headers: Record<string, string> = {
@@ -55,6 +54,42 @@ export class ParseService {
       return data;
     } catch (error) {
       console.error("Failed to run Parse.bot scraper:", error);
+      throw error;
+    }
+  }
+
+  async submitForm(url: string, formData: Record<string, any>): Promise<any> {
+    if (!this.scraperId) throw new Error("Parse.bot scraper ID is not configured.");
+
+    // Using the 'auto_fill_and_submit_form' capability (conceptual endpoint based on research)
+    // Adjusting to standard scraper run pattern if specific endpoint differs, 
+    // but assuming /start or specific /submit endpoint exists for this feature.
+    const endpoint = `${this.baseUrl}/${this.scraperId}/start`;
+
+    try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (this.authToken) {
+        headers["Authorization"] = `Bearer ${this.authToken}`;
+        headers["X-API-Key"] = this.authToken;
+      }
+
+      // Parse.bot usually takes an 'options' object for actions
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          url: url,
+          options: {
+            action: "fill_and_submit",
+            data: formData
+          }
+        })
+      });
+
+      if (!response.ok) throw new Error(`Parse.bot Submit Failed: ${response.statusText}`);
+      return await response.json();
+    } catch (error) {
+      console.error("Parse.bot Cloud Fill failed:", error);
       throw error;
     }
   }
