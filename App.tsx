@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { TabType, ApplicationStatus, JobApplication, Recommendation } from './types';
 import TriggerButton from './components/TriggerButton';
 import AppPanel from './components/AppPanel';
+import AgentFlow from './components/AgentFlow';
 
 const MOCK_HISTORY: JobApplication[] = [
   { id: '1', company: 'Linear', role: 'Product Designer', timestamp: '2h ago', status: ApplicationStatus.SENT },
@@ -24,23 +25,26 @@ const App: React.FC = () => {
   const togglePanel = () => setIsOpen(prev => !prev);
 
   return (
-    <div className="min-h-screen w-full relative">
-      {/* Mock Host Page Backdrop - Adjusted for white background visibility */}
-      <div className="absolute inset-0 p-5 grid grid-cols-[240px,1fr] gap-5 opacity-40 blur-[2px] pointer-events-none select-none">
-        <div className="bg-gray-50 rounded-xl h-full shadow-sm border border-black/5"></div>
-        <div className="bg-gray-50 rounded-xl h-full shadow-sm border border-black/5"></div>
+    <div className="min-h-screen w-full relative overflow-hidden">
+      {/* Agent Flow Background */}
+      <div className="absolute inset-0 z-0">
+        <AgentFlow />
       </div>
 
       {/* Floating Extension Overlay */}
-      <div className="fixed bottom-8 right-8 flex flex-col items-end gap-4 z-50">
-        <AppPanel 
-          isOpen={isOpen} 
-          activeTab={activeTab} 
-          setActiveTab={setActiveTab}
-          applications={applications}
-          recommendations={recommendations}
-        />
-        <TriggerButton isOpen={isOpen} onClick={togglePanel} />
+      <div className="fixed bottom-8 right-8 flex flex-col items-end gap-4 z-50 pointer-events-none">
+        <div className="pointer-events-auto">
+          <AppPanel 
+            isOpen={isOpen} 
+            activeTab={activeTab} 
+            setActiveTab={setActiveTab}
+            applications={applications}
+            recommendations={recommendations}
+          />
+        </div>
+        <div className="pointer-events-auto">
+          <TriggerButton isOpen={isOpen} onClick={togglePanel} />
+        </div>
       </div>
     </div>
   );

@@ -28,8 +28,15 @@ const AppPanel: React.FC<AppPanelProps> = ({
   // Settings States
   const [resumeSync, setResumeSync] = useState(true);
   const [detailedDrafts, setDetailedDrafts] = useState(false);
+  const [selectedApiKey, setSelectedApiKey] = useState('Gemini 1.5 Flash');
 
   if (!isOpen) return null;
+
+  const API_KEYS = [
+    { name: 'Gemini 1.5 Flash', status: 'Active' },
+    { name: 'Gemini 1.5 Pro', status: 'Available' },
+    { name: 'GPT-4o Mini', status: 'Connected' },
+  ];
 
   const Toggle = ({ active, onToggle }: { active: boolean; onToggle: () => void }) => (
     <button 
@@ -94,6 +101,33 @@ const AppPanel: React.FC<AppPanelProps> = ({
 
         {activeTab === TabType.SETTINGS && (
           <div className="space-y-4 pt-4">
+            <div className="bg-white p-4 rounded-xl border border-black/5 shadow-sm">
+              <span className="text-[10px] font-mono text-gray-400 uppercase tracking-widest mb-3 block">AI Agent Model</span>
+              <div className="space-y-2">
+                {API_KEYS.map((key) => (
+                  <button
+                    key={key.name}
+                    onClick={() => setSelectedApiKey(key.name)}
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg border transition-all duration-200 ${
+                      selectedApiKey === key.name 
+                        ? 'border-black bg-black text-white shadow-md' 
+                        : 'border-black/5 bg-gray-50 text-black hover:border-black/20'
+                    }`}
+                  >
+                    <div className="flex flex-col items-start">
+                      <span className="text-xs font-bold uppercase tracking-tight">{key.name}</span>
+                      <span className={`text-[9px] font-mono uppercase ${selectedApiKey === key.name ? 'text-white/60' : 'text-gray-400'}`}>
+                        {key.status}
+                      </span>
+                    </div>
+                    {selectedApiKey === key.name && (
+                      <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div 
               className="bg-white p-4 rounded-xl border border-black/5 shadow-sm cursor-pointer hover:bg-gray-50/50 transition-colors"
               onClick={() => setResumeSync(!resumeSync)}

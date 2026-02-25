@@ -1,0 +1,41 @@
+@import "tailwindcss";
+@import "reactflow/dist/style.css";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --radius-xl-plus: 24px;
+  --color-bg-body: #FFFFFF;
+  --color-bg-app: #F2F2F2;
+  --color-accent-black: #0D0D0D;
+}
+
+body {
+  @apply bg-white font-sans text-accent-black;
+}
+
+.react-flow__node {
+  @apply !border-none !p-0 !bg-transparent;
+}
+
+.react-flow__edge-path {
+  @apply !stroke-black/20 !stroke-[1.5px];
+}
+
+.react-flow__edge.animated path {
+  stroke-dasharray: 5;
+  animation: dashdraw 0.5s linear infinite;
+}
+
+@keyframes dashdraw {
+  from {
+    stroke-dashoffset: 10;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.react-flow__handle {
+  @apply !w-2 !h-2 !bg-black !border-2 !border-white;
+}

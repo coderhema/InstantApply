@@ -1,10 +1,36 @@
 
 import React, { useState, useEffect } from 'react';
 import { generateDraft } from '../services/geminiService';
+import { Copy, Check } from 'lucide-react';
 
 interface DraftingViewProps {
   onCancel: () => void;
 }
+
+const CopyButton = ({ text }: { text: string }) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy!', err);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleCopy}
+      className="p-1.5 hover:bg-gray-100 rounded-md transition-colors text-gray-400 hover:text-black shrink-0"
+      title="Copy to clipboard"
+    >
+      {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
+    </button>
+  );
+};
 
 const DraftingView: React.FC<DraftingViewProps> = ({ onCancel }) => {
   const [loading, setLoading] = useState(true);
@@ -53,7 +79,10 @@ const DraftingView: React.FC<DraftingViewProps> = ({ onCancel }) => {
 
       <div className="space-y-6">
         <div>
-          <label className="text-[9px] font-mono text-gray-400 uppercase mb-2 block">Cover Letter Snippet</label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-[9px] font-mono text-gray-400 uppercase block">Cover Letter Snippet</label>
+            {draft?.coverLetter && <CopyButton text={draft.coverLetter} />}
+          </div>
           <div className="bg-white p-4 rounded-xl text-xs leading-relaxed text-gray-700 border border-black/5">
             {draft?.coverLetter}
           </div>
@@ -63,9 +92,12 @@ const DraftingView: React.FC<DraftingViewProps> = ({ onCancel }) => {
           <label className="text-[9px] font-mono text-gray-400 uppercase mb-2 block">Optimized Experience Bullets</label>
           <ul className="space-y-3">
             {draft?.optimizedBullets.map((bullet, idx) => (
-              <li key={idx} className="bg-white p-3 rounded-xl text-xs text-gray-700 border border-black/5 flex gap-3">
-                <span className="text-black font-bold shrink-0">•</span>
-                <span>{bullet}</span>
+              <li key={idx} className="bg-white p-3 rounded-xl text-xs text-gray-700 border border-black/5 flex items-start gap-3 group">
+                <span className="text-black font-bold shrink-0 mt-0.5">•</span>
+                <span className="flex-1">{bullet}</span>
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                  <CopyButton text={bullet} />
+                </div>
               </li>
             ))}
           </ul>

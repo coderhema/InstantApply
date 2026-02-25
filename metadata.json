@@ -1,5 +1,5 @@
 {
-  "name": "InstantApply AI Agent",
+  "name": "IAAI Agent",
   "description": "A sleek, AI-powered resume agent that lives as an overlay on your browser, helping you draft tailored applications and track your job search history in real-time.",
   "requestFramePermissions": []
 }
