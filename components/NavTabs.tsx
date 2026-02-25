@@ -19,8 +19,8 @@ const NavTabs: React.FC<NavTabsProps> = ({ activeTab, onTabChange }) => {
           className={`
             text-[11px] uppercase tracking-widest pb-1 border-b transition-all duration-200
             ${activeTab === tab 
-              ? 'text-accent-black border-accent-black' 
-              : 'text-[#8C8C8C] border-transparent hover:text-accent-black'}
+              ? 'text-white border-white' 
+              : 'text-white/40 border-transparent hover:text-white'}
           `}
         >
           {tab}

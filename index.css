@@ -5,13 +5,14 @@
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
   --radius-xl-plus: 24px;
-  --color-bg-body: #FFFFFF;
-  --color-bg-app: #F2F2F2;
-  --color-accent-black: #0D0D0D;
+  --color-bg-body: #0A0A0A;
+  --color-bg-app: #111111;
+  --color-accent-black: #FFFFFF;
+  --color-border-subtle: rgba(255, 255, 255, 0.08);
 }
 
 body {
-  @apply bg-white font-sans text-accent-black;
+  @apply bg-[#0A0A0A] font-sans text-white;
 }
 
 .react-flow__node {
@@ -19,7 +20,7 @@ body {
 }
 
 .react-flow__edge-path {
-  @apply !stroke-black/20 !stroke-[1.5px];
+  @apply !stroke-white/10 !stroke-[1.5px];
 }
 
 .react-flow__edge.animated path {
@@ -37,5 +38,18 @@ body {
 }
 
 .react-flow__handle {
-  @apply !w-2 !h-2 !bg-black !border-2 !border-white;
+  @apply !w-2 !h-2 !bg-white !border-2 !border-black;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
 }

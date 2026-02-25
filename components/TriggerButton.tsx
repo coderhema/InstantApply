@@ -11,13 +11,13 @@ const TriggerButton: React.FC<TriggerButtonProps> = ({ isOpen, onClick }) => {
     <button 
       onClick={onClick}
       className={`
-        relative w-14 h-14 bg-accent-black text-white flex items-center justify-center 
-        shadow-lg transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]
+        relative w-14 h-14 bg-white text-black flex items-center justify-center 
+        shadow-2xl transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]
         hover:scale-105 active:scale-95 rounded-full
         ${isOpen ? 'rotate-45' : 'rotate-0'}
       `}
     >
-      <div className="absolute -top-1 -right-1 w-[18px] h-[18px] bg-[#FF3B30] rounded-full border-2 border-white grid place-items-center text-[9px] font-bold text-white">
+      <div className="absolute -top-1 -right-1 w-[18px] h-[18px] bg-white rounded-full border-2 border-[#0A0A0A] grid place-items-center text-[9px] font-bold text-black">
         1
       </div>
       <svg 

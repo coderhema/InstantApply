@@ -60,12 +60,12 @@ const CustomNode = ({ data, selected, id }: any) => {
     <div 
       onDoubleClick={onDoubleClick}
       className={`px-4 py-3 rounded-2xl shadow-sm border transition-all duration-200 min-w-[140px] ${
-        selected ? 'border-black ring-2 ring-black/5 bg-white' : 'border-black/10 bg-white/80 backdrop-blur-sm'
+        selected ? 'border-white ring-2 ring-white/10 bg-[#1A1A1A]' : 'border-white/10 bg-[#141414]/80 backdrop-blur-sm'
       }`}
     >
-      <Handle type="target" position={Position.Top} className="!bg-black !w-2 !h-2" />
+      <Handle type="target" position={Position.Top} className="!bg-white !w-2 !h-2" />
       <div className="flex flex-col gap-1">
-        <span className="text-[10px] font-mono text-gray-400 uppercase tracking-widest">{data.label}</span>
+        <span className="text-[10px] font-mono text-white/40 uppercase tracking-widest">{data.label}</span>
         {isEditing ? (
           <input
             ref={inputRef}
@@ -73,13 +73,13 @@ const CustomNode = ({ data, selected, id }: any) => {
             onChange={(e) => setValue(e.target.value)}
             onBlur={onBlur}
             onKeyDown={onKeyDown}
-            className="text-xs font-bold text-black bg-transparent border-none outline-none p-0 w-full"
+            className="text-xs font-bold text-white bg-transparent border-none outline-none p-0 w-full"
           />
         ) : (
-          <span className="text-xs font-bold text-black">{data.value}</span>
+          <span className="text-xs font-bold text-white">{data.value}</span>
         )}
       </div>
-      <Handle type="source" position={Position.Bottom} className="!bg-black !w-2 !h-2" />
+      <Handle type="source" position={Position.Bottom} className="!bg-white !w-2 !h-2" />
     </div>
   );
 };
@@ -153,24 +153,24 @@ const ContextMenu = ({ x, y, onClose, onAddNode }: any) => {
   return (
     <div 
       ref={menuRef}
-      className="fixed z-[100] bg-white border border-black/5 shadow-xl rounded-2xl p-2 min-w-[160px] animate-in fade-in zoom-in-95 duration-100"
+      className="fixed z-[100] bg-[#1A1A1A] border border-white/10 shadow-2xl rounded-2xl p-2 min-w-[160px] animate-in fade-in zoom-in-95 duration-100"
       style={{ top: y, left: x }}
     >
-      <div className="px-3 py-2 border-bottom border-black/5 mb-1">
-        <span className="text-[10px] font-mono text-gray-400 uppercase tracking-widest">Agent Config</span>
+      <div className="px-3 py-2 border-b border-white/5 mb-1">
+        <span className="text-[10px] font-mono text-white/40 uppercase tracking-widest">Agent Config</span>
       </div>
       {options.map((opt) => (
         <button
           key={opt.label}
           onClick={() => onAddNode(opt.label, opt.value, opt.isCore)}
-          className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-xl transition-colors text-left group"
+          className="w-full flex items-center gap-3 px-3 py-2 hover:bg-white/5 rounded-xl transition-colors text-left group"
         >
-          <div className="text-gray-400 group-hover:text-black transition-colors">
+          <div className="text-white/40 group-hover:text-white transition-colors">
             {opt.icon}
           </div>
           <div className="flex flex-col">
-            <span className="text-[10px] font-mono text-gray-400 uppercase leading-none mb-0.5">{opt.label}</span>
-            <span className="text-xs font-bold text-black">{opt.value}</span>
+            <span className="text-[10px] font-mono text-white/40 uppercase leading-none mb-0.5">{opt.label}</span>
+            <span className="text-xs font-bold text-white">{opt.value}</span>
           </div>
         </button>
       ))}
@@ -264,7 +264,7 @@ const FlowContent = () => {
   };
 
   return (
-    <div className="w-full h-full bg-[#F2F2F2]" onContextMenu={onPaneContextMenu}>
+    <div className="w-full h-full bg-[#0A0A0A]" onContextMenu={onPaneContextMenu}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -275,11 +275,11 @@ const FlowContent = () => {
         fitView
         onPaneClick={() => setMenu(null)}
       >
-        <Background color="#000" gap={20} size={1} opacity={0.05} />
-        <Controls showInteractive={false} className="!bg-white !border-black/5 !shadow-sm !rounded-xl overflow-hidden" />
-        <Panel position="top-left" className="bg-white/80 backdrop-blur-md p-4 rounded-2xl border border-black/5 shadow-sm m-4">
-          <h3 className="text-xs font-bold uppercase tracking-widest mb-1">Agent Configuration</h3>
-          <p className="text-[10px] text-gray-500 font-mono">Right-click to add nodes • Connect to define behavior</p>
+        <Background color="#FFF" gap={20} size={1} opacity={0.03} />
+        <Controls showInteractive={false} className="!bg-[#1A1A1A] !border-white/10 !shadow-sm !rounded-xl overflow-hidden" />
+        <Panel position="top-left" className="bg-[#141414]/80 backdrop-blur-md p-4 rounded-2xl border border-white/10 shadow-sm m-4">
+          <h3 className="text-xs font-bold uppercase tracking-widest mb-1 text-white">Agent Configuration</h3>
+          <p className="text-[10px] text-white/40 font-mono">Right-click to add nodes • Connect to define behavior</p>
         </Panel>
       </ReactFlow>
       {menu && (

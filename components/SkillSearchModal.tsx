@@ -44,21 +44,21 @@ const SkillSearchModal: React.FC<SkillSearchModalProps> = ({ isOpen, onClose, on
   );
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-black/5 overflow-hidden animate-in zoom-in-95 duration-200">
-        <div className="p-4 border-b border-black/5 flex items-center justify-between bg-gray-50/50">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-[#111111] w-full max-w-md rounded-2xl shadow-2xl border border-white/10 overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className="p-4 border-b border-white/5 flex items-center justify-between bg-white/5">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-black text-white grid place-items-center">
+            <div className="w-8 h-8 rounded-lg bg-white text-black grid place-items-center">
               <Search size={16} />
             </div>
             <div>
-              <h3 className="text-xs font-bold uppercase tracking-tight">Skill Database</h3>
-              <p className="text-[9px] font-mono text-gray-400 uppercase tracking-widest">IAAI Skills Engine</p>
+              <h3 className="text-xs font-bold uppercase tracking-tight text-white">Skill Database</h3>
+              <p className="text-[9px] font-mono text-white/40 uppercase tracking-widest">IAAI Skills Engine</p>
             </div>
           </div>
           <button 
             onClick={onClose}
-            className="w-8 h-8 rounded-full hover:bg-black/5 grid place-items-center transition-colors"
+            className="w-8 h-8 rounded-full hover:bg-white/5 grid place-items-center transition-colors text-white/40 hover:text-white"
           >
             <X size={16} />
           </button>
@@ -66,14 +66,14 @@ const SkillSearchModal: React.FC<SkillSearchModalProps> = ({ isOpen, onClose, on
 
         <div className="p-4">
           <div className="relative mb-4">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20" size={14} />
             <input
               ref={inputRef}
               type="text"
               placeholder="Search skills (e.g. React, AI, Database)..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-gray-50 border border-black/5 rounded-xl pl-10 pr-4 py-2.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-black/5 transition-all"
+              className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-xs font-medium text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-white/5 transition-all"
             />
           </div>
 
@@ -86,35 +86,35 @@ const SkillSearchModal: React.FC<SkillSearchModalProps> = ({ isOpen, onClose, on
                     onSelectSkill(skill.name);
                     onClose();
                   }}
-                  className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 transition-all group border border-transparent hover:border-black/5"
+                  className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-all group border border-transparent hover:border-white/10"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-gray-100 text-gray-500 group-hover:bg-black group-hover:text-white grid place-items-center transition-all">
+                    <div className="w-8 h-8 rounded-lg bg-white/5 text-white/40 group-hover:bg-white group-hover:text-black grid place-items-center transition-all">
                       {skill.icon}
                     </div>
                     <div className="text-left">
-                      <div className="text-xs font-bold text-black">{skill.name}</div>
-                      <div className="text-[9px] font-mono text-gray-400 uppercase tracking-widest">{skill.category}</div>
+                      <div className="text-xs font-bold text-white">{skill.name}</div>
+                      <div className="text-[9px] font-mono text-white/40 uppercase tracking-widest">{skill.category}</div>
                     </div>
                   </div>
                   <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div className="text-[9px] font-bold uppercase tracking-widest bg-black/5 px-2 py-1 rounded-md">Select</div>
+                    <div className="text-[9px] font-bold uppercase tracking-widest bg-white/10 text-white px-2 py-1 rounded-md">Select</div>
                   </div>
                 </button>
               ))
             ) : (
               <div className="py-12 text-center">
-                <p className="text-xs text-gray-400 font-mono">No matching skills found in database.</p>
+                <p className="text-xs text-white/20 font-mono">No matching skills found in database.</p>
               </div>
             )}
           </div>
         </div>
 
-        <div className="p-4 bg-gray-50/50 border-t border-black/5 flex justify-between items-center">
-          <span className="text-[9px] font-mono text-gray-400 uppercase tracking-widest">Source: skills.sh</span>
+        <div className="p-4 bg-white/5 border-t border-white/5 flex justify-between items-center">
+          <span className="text-[9px] font-mono text-white/20 uppercase tracking-widest">Source: skills.sh</span>
           <button 
             onClick={onClose}
-            className="text-[9px] font-bold uppercase tracking-widest hover:underline"
+            className="text-[9px] font-bold uppercase tracking-widest hover:underline text-white/40 hover:text-white"
           >
             Cancel
           </button>
