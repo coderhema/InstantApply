@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { generateDraft } from '../services/geminiService';
-import { Copy, Check } from 'lucide-react';
+import { Copy as CopyIcon, Check as CheckIcon } from 'iconoir-react';
 
 interface DraftingViewProps {
   onCancel: () => void;
@@ -27,7 +27,7 @@ const CopyButton = ({ text }: { text: string }) => {
       className="p-1.5 hover:bg-white/10 rounded-md transition-colors text-white/40 hover:text-white shrink-0"
       title="Copy to clipboard"
     >
-      {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
+      {copied ? <CheckIcon className="w-3.5 h-3.5 text-emerald-500" /> : <CopyIcon className="w-3.5 h-3.5" />}
     </button>
   );
 };

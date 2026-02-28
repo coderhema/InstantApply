@@ -1,7 +1,6 @@
 import React, { useCallback, useState, useRef, useEffect } from 'react';
 import ReactFlow, { 
   Background, 
-  Controls, 
   Node, 
   Edge, 
   Handle, 
@@ -11,10 +10,17 @@ import ReactFlow, {
   Connection,
   addEdge,
   Panel,
-  useReactFlow,
-  ReactFlowProvider
+  useReactFlow
 } from 'reactflow';
-import { Plus, Target, Zap, Brain, Activity, Code, User } from 'lucide-react';
+import { 
+  Plus, 
+  Pin as TargetIcon, 
+  Flash as ZapIcon, 
+  Brain as BrainIcon, 
+  StatsUpSquare as ActivityIcon, 
+  Code as CodeIcon, 
+  User as UserIcon 
+} from 'iconoir-react';
 import SkillSearchModal from './SkillSearchModal';
 
 const CustomNode = ({ data, selected, id }: any) => {
@@ -59,27 +65,65 @@ const CustomNode = ({ data, selected, id }: any) => {
   return (
     <div 
       onDoubleClick={onDoubleClick}
-      className={`px-4 py-3 rounded-2xl shadow-sm border transition-all duration-200 min-w-[140px] ${
-        selected ? 'border-white ring-2 ring-white/10 bg-[#1A1A1A]' : 'border-white/10 bg-[#141414]/80 backdrop-blur-sm'
-      }`}
+      className={`
+        bg-bg-node border rounded-2xl w-[260px] shadow-[0_4px_20px_rgba(0,0,0,0.6)] 
+        flex flex-col transition-all duration-200 cursor-grab
+        ${selected ? 'border-[#666] shadow-[0_0_0_1px_#666,0_8px_30px_rgba(0,0,0,0.8)] z-[100]' : 'border-border-strong hover:border-[#444]'}
+      `}
     >
-      <Handle type="target" position={Position.Top} className="!bg-white !w-2 !h-2" />
-      <div className="flex flex-col gap-1">
-        <span className="text-[10px] font-mono text-white/40 uppercase tracking-widest">{data.label}</span>
-        {isEditing ? (
-          <input
-            ref={inputRef}
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            onBlur={onBlur}
-            onKeyDown={onKeyDown}
-            className="text-xs font-bold text-white bg-transparent border-none outline-none p-0 w-full"
-          />
-        ) : (
-          <span className="text-xs font-bold text-white">{data.value}</span>
+      <Handle 
+        type="target" 
+        position={Position.Left} 
+        className="!w-[10px] !h-[10px] !bg-bg-panel !border-2 !border-text-tertiary !rounded-full !left-[-6px] hover:!bg-text-primary hover:!border-text-primary transition-all" 
+      />
+      
+      <div className="px-4 py-3.5 border-b border-border-subtle flex items-center justify-between">
+        <span className="font-medium text-sm text-text-primary tracking-tight">{data.label}</span>
+        <span className="text-[9px] text-text-secondary uppercase tracking-[0.1em] bg-bg-input px-1.5 py-0.5 rounded border border-border-subtle">
+          {data.type || 'Node'}
+        </span>
+      </div>
+
+      <div className="p-4 flex flex-col gap-3">
+        <div className="flex justify-between items-center text-xs">
+          <span className="text-text-secondary">Value</span>
+          {isEditing ? (
+            <input
+              ref={inputRef}
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              onBlur={onBlur}
+              onKeyDown={onKeyDown}
+              className="text-text-primary bg-transparent border-none outline-none p-0 text-right w-1/2"
+            />
+          ) : (
+            <span className="text-text-primary opacity-90">{data.value}</span>
+          )}
+        </div>
+        
+        {data.params && Object.entries(data.params).map(([key, val]: any) => (
+          <div key={key} className="flex justify-between items-center text-xs">
+            <span className="text-text-secondary capitalize">{key}</span>
+            <span className="text-text-primary opacity-90">{val}</span>
+          </div>
+        ))}
+
+        {data.tags && (
+          <div className="mt-2 flex gap-2">
+            {data.tags.map((tag: string) => (
+              <span key={tag} className="inline-block px-2 py-1 rounded border border-border-subtle text-[10px] text-text-secondary uppercase tracking-wider bg-bg-input">
+                {tag}
+              </span>
+            ))}
+          </div>
         )}
       </div>
-      <Handle type="source" position={Position.Bottom} className="!bg-white !w-2 !h-2" />
+
+      <Handle 
+        type="source" 
+        position={Position.Right} 
+        className="!w-[10px] !h-[10px] !bg-bg-panel !border-2 !border-text-tertiary !rounded-full !right-[-6px] hover:!bg-text-primary hover:!border-text-primary transition-all" 
+      />
     </div>
   );
 };
@@ -92,40 +136,43 @@ const initialNodes: Node[] = [
   {
     id: 'core',
     type: 'custom',
-    position: { x: 400, y: 100 },
-    data: { label: 'Agent Core', value: 'IAAI' },
+    position: { x: 100, y: 100 },
+    data: { 
+      label: 'Agent Core', 
+      value: 'IAAI', 
+      type: 'LLM',
+      params: { model: 'Gemini 1.5 Flash', temp: '0.2' },
+      tags: ['Analyze Sentiment']
+    },
   },
   {
     id: 'goal-1',
     type: 'custom',
-    position: { x: 200, y: 250 },
-    data: { label: 'Primary Goal', value: 'Career Growth' },
-  },
-  {
-    id: 'attitude-1',
-    type: 'custom',
-    position: { x: 400, y: 250 },
-    data: { label: 'Agent Attitude', value: 'Professional' },
-  },
-  {
-    id: 'strategy-1',
-    type: 'custom',
-    position: { x: 600, y: 250 },
-    data: { label: 'Search Strategy', value: 'Tailored Only' },
+    position: { x: 450, y: 50 },
+    data: { 
+      label: 'Primary Goal', 
+      value: 'Career Growth', 
+      type: 'Trigger',
+      params: { confidence: '0.95' },
+      tags: ['Inbox']
+    },
   },
   {
     id: 'action-1',
     type: 'custom',
-    position: { x: 400, y: 400 },
-    data: { label: 'Active State', value: 'Monitoring Jobs' },
+    position: { x: 450, y: 250 },
+    data: { 
+      label: 'Active State', 
+      value: 'Monitoring Jobs', 
+      type: 'Action',
+      params: { system: 'LinkedIn', status: 'Pending' }
+    },
   },
 ];
 
 const initialEdges: Edge[] = [
   { id: 'e1-2', source: 'core', target: 'goal-1', animated: true },
-  { id: 'e1-3', source: 'core', target: 'attitude-1', animated: true },
-  { id: 'e1-4', source: 'core', target: 'strategy-1', animated: true },
-  { id: 'e3-5', source: 'attitude-1', target: 'action-1', animated: true },
+  { id: 'e1-3', source: 'core', target: 'action-1', animated: true },
 ];
 
 const ContextMenu = ({ x, y, onClose, onAddNode }: any) => {
@@ -142,35 +189,35 @@ const ContextMenu = ({ x, y, onClose, onAddNode }: any) => {
   }, [onClose]);
 
   const options = [
-    { label: 'Agent Name', value: 'IAAI', icon: <User size={14} />, isCore: true },
-    { label: 'Skills', value: 'skills.sh', icon: <Code size={14} /> },
-    { label: 'Goal', value: 'New Goal', icon: <Target size={14} /> },
-    { label: 'Attitude', value: 'Friendly', icon: <Brain size={14} /> },
-    { label: 'Strategy', value: 'Aggressive', icon: <Zap size={14} /> },
-    { label: 'Action', value: 'Auto-Drafting', icon: <Activity size={14} /> },
+    { label: 'Agent Name', value: 'IAAI', icon: <UserIcon className="w-3.5 h-3.5" />, isCore: true, type: 'LLM' },
+    { label: 'Skills', value: 'skills.sh', icon: <CodeIcon className="w-3.5 h-3.5" />, type: 'Action' },
+    { label: 'Goal', value: 'New Goal', icon: <TargetIcon className="w-3.5 h-3.5" />, type: 'Trigger' },
+    { label: 'Attitude', value: 'Friendly', icon: <BrainIcon className="w-3.5 h-3.5" />, type: 'LLM' },
+    { label: 'Strategy', value: 'Aggressive', icon: <ZapIcon className="w-3.5 h-3.5" />, type: 'LLM' },
+    { label: 'Action', value: 'Auto-Drafting', icon: <ActivityIcon className="w-3.5 h-3.5" />, type: 'Action' },
   ];
 
   return (
     <div 
       ref={menuRef}
-      className="fixed z-[100] bg-[#1A1A1A] border border-white/10 shadow-2xl rounded-2xl p-2 min-w-[160px] animate-in fade-in zoom-in-95 duration-100"
+      className="fixed z-[100] bg-bg-panel border border-border-strong shadow-[0_8px_30px_rgba(0,0,0,0.8)] rounded-2xl p-2 min-w-[180px] animate-in fade-in zoom-in-95 duration-100"
       style={{ top: y, left: x }}
     >
-      <div className="px-3 py-2 border-b border-white/5 mb-1">
-        <span className="text-[10px] font-mono text-white/40 uppercase tracking-widest">Agent Config</span>
+      <div className="px-3 py-2 border-b border-border-subtle mb-1">
+        <span className="text-[10px] font-mono text-text-tertiary uppercase tracking-widest">Agent Config</span>
       </div>
       {options.map((opt) => (
         <button
           key={opt.label}
           onClick={() => onAddNode(opt.label, opt.value, opt.isCore)}
-          className="w-full flex items-center gap-3 px-3 py-2 hover:bg-white/5 rounded-xl transition-colors text-left group"
+          className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-bg-input rounded-xl transition-colors text-left group"
         >
-          <div className="text-white/40 group-hover:text-white transition-colors">
+          <div className="text-text-tertiary group-hover:text-text-primary transition-colors">
             {opt.icon}
           </div>
           <div className="flex flex-col">
-            <span className="text-[10px] font-mono text-white/40 uppercase leading-none mb-0.5">{opt.label}</span>
-            <span className="text-xs font-bold text-white">{opt.value}</span>
+            <span className="text-[10px] font-mono text-text-tertiary uppercase leading-none mb-1">{opt.label}</span>
+            <span className="text-xs font-bold text-text-primary">{opt.value}</span>
           </div>
         </button>
       ))}
@@ -264,7 +311,7 @@ const FlowContent = () => {
   };
 
   return (
-    <div className="w-full h-full bg-[#0A0A0A]" onContextMenu={onPaneContextMenu}>
+    <div className="w-full h-full bg-bg-canvas" onContextMenu={onPaneContextMenu}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -275,11 +322,16 @@ const FlowContent = () => {
         fitView
         onPaneClick={() => setMenu(null)}
       >
-        <Background color="#FFF" gap={20} size={1} opacity={0.03} />
-        <Controls showInteractive={false} className="!bg-[#1A1A1A] !border-white/10 !shadow-sm !rounded-xl overflow-hidden" />
-        <Panel position="top-left" className="bg-[#141414]/80 backdrop-blur-md p-4 rounded-2xl border border-white/10 shadow-sm m-4">
-          <h3 className="text-xs font-bold uppercase tracking-widest mb-1 text-white">Agent Configuration</h3>
-          <p className="text-[10px] text-white/40 font-mono">Right-click to add nodes • Connect to define behavior</p>
+        <Background 
+          color="#FFF" 
+          gap={24} 
+          size={1} 
+          opacity={0.07} 
+          variant={undefined as any} // Using radial-gradient via CSS in index.css is better, but this works for dots
+        />
+        <Panel position="top-left" className="bg-bg-panel/80 backdrop-blur-md p-4 rounded-2xl border border-border-subtle shadow-sm m-4">
+          <h3 className="text-xs font-bold uppercase tracking-widest mb-1 text-text-primary">Agent Configuration</h3>
+          <p className="text-[10px] text-text-tertiary font-mono">Right-click to add nodes • Connect to define behavior</p>
         </Panel>
       </ReactFlow>
       {menu && (
@@ -301,9 +353,7 @@ const FlowContent = () => {
 
 const AgentFlow = () => {
   return (
-    <ReactFlowProvider>
-      <FlowContent />
-    </ReactFlowProvider>
+    <FlowContent />
   );
 };
 

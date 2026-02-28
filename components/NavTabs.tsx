@@ -11,16 +11,16 @@ const NavTabs: React.FC<NavTabsProps> = ({ activeTab, onTabChange }) => {
   const tabs = Object.values(TabType);
 
   return (
-    <div className="flex gap-6 px-5 mb-4 border-b border-transparent">
+    <div className="flex gap-6 px-6 mb-4 border-b border-transparent">
       {tabs.map(tab => (
         <button
           key={tab}
           onClick={() => onTabChange(tab)}
           className={`
-            text-[11px] uppercase tracking-widest pb-1 border-b transition-all duration-200
+            text-[11px] uppercase tracking-widest pb-1 border-b transition-all duration-200 font-bold
             ${activeTab === tab 
-              ? 'text-white border-white' 
-              : 'text-white/40 border-transparent hover:text-white'}
+              ? 'text-text-primary border-text-primary' 
+              : 'text-text-tertiary border-transparent hover:text-text-secondary'}
           `}
         >
           {tab}
